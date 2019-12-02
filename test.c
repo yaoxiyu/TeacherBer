@@ -14,6 +14,20 @@ typedef struct _Teacher
     int pLen;
 }Teacher;
 
+void freeTeacher(Teacher **pTeacher){
+    if (pTeacher == NULL){
+        return;
+    }
+    if (pTeacher != NULL){
+        if ((*pTeacher)->p != NULL){
+            free((*pTeacher)->p);
+            (*pTeacher)->p = NULL;
+        }
+        free(*pTeacher);
+        *pTeacher = NULL;
+    }
+}
+
 int TeacherEncode(Teacher *pTeacher, unsigned char **out, int *outLen){
     int             ret = 0;
     ITCAST_ANYBUF   *pTmp = NULL;
@@ -38,14 +52,13 @@ int TeacherEncode(Teacher *pTeacher, unsigned char **out, int *outLen){
         printf("func DER_ItAsn1_WritePrintableString() err:%d\n", ret);
         return ret;
     }
-
+    DER_ITCAST_FreeQueue(pTmpBuf);
     // 两个辅助指针变量 指向 同一个节点
     pTmp = pHeadBuf;
 
     // 编码 age
     ret = DER_ItAsn1_WriteInteger(pTeacher->age, &(pTmp->next));
     if (ret != 0){
-        DER_ITCAST_FreeQueue(pHeadBuf);
         printf("func DER_ItAsn1_WriteInteger() err:%d\n", ret);
         return ret;
     }
@@ -54,7 +67,6 @@ int TeacherEncode(Teacher *pTeacher, unsigned char **out, int *outLen){
     // 编码 p
     ret = EncodeChar(pTeacher->p, pTeacher->pLen, &pTmp->next);
     if (ret != 0){
-        DER_ITCAST_FreeQueue(pHeadBuf);
         printf("func EncodeChar() err:%d\n", ret);
         return ret;
     }
@@ -63,7 +75,6 @@ int TeacherEncode(Teacher *pTeacher, unsigned char **out, int *outLen){
     // 编码 pLen
     ret = DER_ItAsn1_WriteInteger(pTeacher->pLen, &(pTmp->next));
     if (ret != 0){
-        DER_ITCAST_FreeQueue(pHeadBuf);
         printf("func DER_ItAsn1_WriteInteger() err:%d\n", ret);
         return ret;
     }
@@ -97,20 +108,23 @@ int TeacherDecode(unsigned char *inData, int inLen, Teacher **pStruct){
     // 转码 unsigned char * 为 ITCAST_ANYBUF
     ret = DER_ITCAST_String_To_AnyBuf(&pTmpAnyBuf, inData, inLen);
     if (ret != 0){
+        if (pTmpAnyBuf != NULL){
+            DER_ITCAST_FreeQueue(pTmpAnyBuf);
+        }
         printf("func DER_ITCAST_String_To_AnyBuf() err:%d\n", ret);
         return ret;
     }
-    // 解码打Teacher 结构体
+    // 解码 Teacher 结构体
     ret = DER_ItAsn1_ReadSequence(pTmpAnyBuf, &pHeadBuf);
     if (ret != 0){
+        DER_ITCAST_FreeQueue(pTmpAnyBuf);
         printf("func DER_ItAsn1_ReadSequence() err:%d\n", ret);
         return ret;
     }
 
     // 给Teacher开辟内存空间
     if (pStructTeacher == NULL){
-
-    pStructTeacher = (Teacher*)malloc(sizeof(Teacher));
+        pStructTeacher = (Teacher*)malloc(sizeof(Teacher));
         if (pStructTeacher == NULL){
             ret = -1;
             printf("Teacher malloc err:%d\n", ret);
@@ -124,6 +138,8 @@ int TeacherDecode(unsigned char *inData, int inLen, Teacher **pStruct){
     // 解码 name
     ret = DER_ItAsn1_ReadPrintableString(pTmp, &pOutData);
     if (ret != 0){
+        freeTeacher(&pStructTeacher);
+        DER_ITCAST_FreeQueue(pHeadBuf);
         printf("func DER_ItAsn1_ReadPrintableString() err:%d\n", ret);
         return ret;
     }
@@ -136,6 +152,8 @@ int TeacherDecode(unsigned char *inData, int inLen, Teacher **pStruct){
     // 解码 age
     ret = DER_ItAsn1_ReadInteger(pTmp, &(pStructTeacher->age));
     if (ret != 0){
+        freeTeacher(&pStructTeacher);
+        DER_ITCAST_FreeQueue(pHeadBuf);
         printf("func DER_ItAsn1_ReadInteger() err:%d\n", ret);
         return ret;
     }
@@ -145,6 +163,8 @@ int TeacherDecode(unsigned char *inData, int inLen, Teacher **pStruct){
     // 解码 p
     ret = DER_ItAsn1_ReadPrintableString(pTmp, &pOutData);
     if (ret != 0){
+        freeTeacher(&pStructTeacher);
+        DER_ITCAST_FreeQueue(pHeadBuf);
         printf("func DER_ItAsn1_ReadPrintableString() err:%d\n", ret);
         return ret;
     }
@@ -152,6 +172,8 @@ int TeacherDecode(unsigned char *inData, int inLen, Teacher **pStruct){
     // ppPrintableString->pData  --> p
     pStructTeacher->p = malloc(pOutData->dataLen + 1);
     if (pStructTeacher->p == NULL){
+        freeTeacher(&pStructTeacher);
+        DER_ITCAST_FreeQueue(pHeadBuf);
         ret = -1;
         printf("Teacher->p malloc err:%d\n", ret);
         return ret;
@@ -164,6 +186,8 @@ int TeacherDecode(unsigned char *inData, int inLen, Teacher **pStruct){
     // 解码 plen
     ret = DER_ItAsn1_ReadInteger(pTmp, &(pStructTeacher->pLen));
     if (ret != 0){
+        freeTeacher(&pStructTeacher);
+        DER_ITCAST_FreeQueue(pHeadBuf);
         printf("func DER_ItAsn1_ReadInteger() err:%d\n", ret);
         return ret;
     }
@@ -174,6 +198,8 @@ int TeacherDecode(unsigned char *inData, int inLen, Teacher **pStruct){
 
     return 0;
 }
+
+
 
 int myWriteFile(unsigned char *buf, int len){
     FILE *fp = NULL;
@@ -218,6 +244,7 @@ int main(){
         printf("编解码失败\n");
     }
 
+    freeTeacher(&pT2);
 
     return 0;
     
