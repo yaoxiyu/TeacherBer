@@ -53,3 +53,5 @@ build/CMakeFiles/main.dir/objects.a
 build/CMakeFiles/main.dir/objects1.rsp
 build/CMakeFiles/main.dir/progress.make
 build/CMakeFiles/main.dir/test.c.obj
+.vscode/c_cpp_properties.json
+build/compile_commands.json
