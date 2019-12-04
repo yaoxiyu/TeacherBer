@@ -28,7 +28,7 @@ void freeTeacher(Teacher **pTeacher){
     }
 }
 
-int TeacherEncode(Teacher *pTeacher, unsigned char **out, int *outLen){
+int TeacherEncode(Teacher *pTeacher, ITCAST_ANYBUF **outData){
     int             ret = 0;
     ITCAST_ANYBUF   *pTmp = NULL;
     ITCAST_ANYBUF   *pHeadBuf = NULL;
@@ -89,10 +89,9 @@ int TeacherEncode(Teacher *pTeacher, unsigned char **out, int *outLen){
 
     DER_ITCAST_FreeQueue(pHeadBuf);
 
-    *out = pOutData->pData;
-    *outLen = pOutData->dataLen;
+    *outData = pOutData;
 
-    return 0;
+    return ret;
 }
 
 
@@ -182,6 +181,7 @@ int TeacherDecode(unsigned char *inData, int inLen, Teacher **pStruct){
     pStructTeacher->p[pOutData->dataLen] = '\0';
 
     pTmp = pTmp->next;
+    DER_ITCAST_FreeQueue(pOutData);
 
     // 解码 plen
     ret = DER_ItAsn1_ReadInteger(pTmp, &(pStructTeacher->pLen));
@@ -196,7 +196,7 @@ int TeacherDecode(unsigned char *inData, int inLen, Teacher **pStruct){
 
 
 
-    return 0;
+    return ret;
 }
 
 
